@@ -18,7 +18,7 @@
 ***************************************************************************/
 
 import QtQuick 2.2
-import QtMultimedia 5.0
+import QtMultimedia
 
 Rectangle {
     id: dispArea
@@ -51,7 +51,6 @@ Rectangle {
     {
         id: player
         objectName: "player"
-        autoPlay: false
         onSourceChanged: console.debug(player.source)
         onPositionChanged:
         {
@@ -65,17 +64,14 @@ Rectangle {
         {
             dispArea.playbackStateChanged(player.playbackState)
         }
-        onStopped:
-        {
-            dispArea.playbackStopped()
-        }
+        audioOutput: AudioOutput {}
+        videoOutput: vidOut
     }
 
     VideoOutput
     {
         id: vidOut
         objectName: "vidOut"
-        source:player
         anchors.fill: parent
 //        fillMode: VideoOutput.Stretch
     }

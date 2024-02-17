@@ -331,8 +331,8 @@ void BibleWidget::on_search_button_clicked()
     int type = ui->comboBoxSearchType->currentIndex();
     int range = ui->comboBoxSearchRange->currentIndex();
 
-    QRegExp rx, rxh;
-    rx.setCaseSensitivity(Qt::CaseInsensitive);
+    QRegularExpression rx, rxh;
+    rx.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
     search_text.replace(" ","\\W*");
     if(type == 0)
     {
@@ -376,7 +376,7 @@ void BibleWidget::on_search_button_clicked()
 
     if (!search_results.isEmpty()) // If have results, then show them
     {
-        if( not ui->result_label->isVisible() )
+        if( ! ui->result_label->isVisible() )
         {
             ui->lineEditBook->clear();
             hidden_splitter_state = ui->results_splitter->saveState();

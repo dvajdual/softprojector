@@ -20,15 +20,16 @@
 #include "song.hpp"
 #include <QDebug>
 #include "spfunctions.hpp"
+#include <algorithm>
 
 // for future use or chord import
 // to filter out ChorPro chords from within the song text
-// Use following QRegExp = "(\\[[\\w]*[\\w]\\]|\\[[\\w]*[#b♭♯][\\w]*\\])"
+// Use following QRegularExpression = "(\\[[\\w]*[\\w]\\]|\\[[\\w]*[#b♭♯][\\w]*\\])"
 
 QString clean(QString str)
 {
     //Removes all none alphanumeric characters from the string
-    str.replace(QRegExp("[\\W*]")," ");
+    str.replace(QRegularExpression("[\\W*]")," ");
     str = str.simplified();
     return str;
 }
@@ -358,7 +359,7 @@ QString Song::getStanzaBlock(int &i, QStringList &list)
     while(i < list.count())
     {
         line = list.at(i);
-        if(line.contains(QRegExp("^&")))
+        if(line.contains(QRegularExpression("^&")))
             line.remove("&");
 
         if(isStanzaTitle(line) && (i!=j))
@@ -594,7 +595,7 @@ bool SongProxyModel::filterAcceptsRow(int sourceRow,
                                       const QModelIndex &sourceParent) const
 {
     bool retValue = false;
-    QRegExp rx;
+    QRegularExpression rx;
     QString s;
 
     QModelIndex index0 = sourceModel()->index(sourceRow, 0, sourceParent);//Category
@@ -622,7 +623,7 @@ bool SongProxyModel::filterAcceptsRow(int sourceRow,
         return true;
 
     // Process filtering
-    rx.setCaseSensitivity(Qt::CaseInsensitive);
+    rx.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
     s = filter_string;
     s.replace(" ","\\W*");
 
@@ -814,7 +815,7 @@ int SongDatabase::lastUser(QString songbook_id)
     sq.exec("SELECT number FROM Songs WHERE songbook_id = " +songbook_id);
     while (sq.next())
         lastInt << sq.value(0).toInt();
-    qSort(lastInt);
+    std::sort(lastInt.begin(), lastInt.end());
     if (lastInt.isEmpty())
         last=1;
     else

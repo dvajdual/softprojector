@@ -17,7 +17,7 @@
 //
 ***************************************************************************/
 
-#include <QDesktopWidget>
+#include <QGuiApplication>
 #include "softprojector.hpp"
 #include "ui_softprojector.h"
 #include "aboutdialog.hpp"
@@ -37,12 +37,13 @@ SoftProjector::SoftProjector(QWidget *parent)
     theme.bible.versions = mySettings.bibleSets;
     theme.bible2.versions = mySettings.bibleSets2;
 
-    //Setting up the Display Screen
-    desktop = new QDesktopWidget();
+
     // NOTE: With virtual desktop, desktop->screen() will always return the main screen,
     // so this will initialize the Display1 widget on the main screen:
-    pds1 = new ProjectorDisplayScreen(desktop->screen(0));
-    pds2 = new ProjectorDisplayScreen(desktop->screen(0)); //for future
+    pds1 = new ProjectorDisplayScreen();
+    pds1->setGeometry(QGuiApplication::primaryScreen()->geometry());
+    pds2 = new ProjectorDisplayScreen(); //for future
+    pds2->setGeometry(QGuiApplication::primaryScreen()->geometry());
     // Don't worry, we'll move it later
 
     bibleWidget = new BibleWidget;
@@ -152,8 +153,8 @@ SoftProjector::SoftProjector(QWidget *parent)
     // Create and connect shortcuts
     shpgUP = new QShortcut(Qt::Key_PageUp,this);
     shpgDwn = new QShortcut(Qt::Key_PageDown,this);
-    shSart1 = new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_B),this);
-    shSart2 = new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_F5),this);
+    shSart1 = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B),this);
+    shSart2 = new QShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F5),this);
     connect(shpgUP,SIGNAL(activated()),this,SLOT(prevSlide()));
     connect(shpgDwn,SIGNAL(activated()),this,SLOT(nextSlide()));
     connect(shSart1,SIGNAL(activated()),this,SLOT(on_actionShow_triggered()));
@@ -170,8 +171,8 @@ SoftProjector::SoftProjector(QWidget *parent)
             mediaControls,SLOT(updateTime(qint64)));
     connect(pds1,SIGNAL(videoDurationChanged(qint64)),
             mediaControls,SLOT(setMaximumTime(qint64)));
-    connect(pds1,SIGNAL(videoPlaybackStateChanged(QMediaPlayer::State)),
-            mediaControls,SLOT(updatePlayerState(QMediaPlayer::State)));
+    connect(pds1,SIGNAL(videoPlaybackStateChanged(QMediaPlayer::PlaybackState)),
+            mediaControls,SLOT(updatePlayerState(QMediaPlayer::PlaybackState)));
     connect(pds1,SIGNAL(videoStopped()),this,SLOT(videoStopped()));
     connect(mediaControls,SIGNAL(play()),this,SLOT(playVideo()));
     connect(mediaControls,SIGNAL(pause()),this,SLOT(pauseVideo()));
@@ -182,6 +183,7 @@ SoftProjector::SoftProjector(QWidget *parent)
 
     version_string = "2.2";
     this->setWindowTitle("SoftProjector " + version_string);
+    //ui->menuBar->setNativeMenuBar(false);
 }
 
 SoftProjector::~SoftProjector()
@@ -198,7 +200,6 @@ SoftProjector::~SoftProjector()
     delete mediaPlayer;
     delete pds1;
     delete pds2;
-    delete desktop;
     delete languageGroup;
     delete settingsDialog;
     delete shpgUP;
@@ -216,22 +217,24 @@ void SoftProjector::positionDisplayWindow()
 
     if (mySettings.general.displayIsOnTop)
     {
-        pds1->setWindowFlags(Qt::WindowStaysOnTopHint);
-        pds2->setWindowFlags(Qt::WindowStaysOnTopHint);
+        pds1->setWindowFlag(Qt::WindowStaysOnTopHint);
+        pds2->setWindowFlag(Qt::WindowStaysOnTopHint);
     }
     else
     {
-        pds1->setWindowFlags(0); // Do not show always on top
-        pds2->setWindowFlags(0); // Do not show always on top
+        pds1->setWindowFlag(Qt::WindowStaysOnTopHint, false);
+        pds2->setWindowFlag(Qt::WindowStaysOnTopHint, false);
     }
 
-    if(desktop->screenCount() > 1)
+    auto screens = getScreensWithSublings();
+    if(screens.size() > 1)
     {
-        if (desktop->isVirtualDesktop())
-        {
-            // Move the display widget to screen 1 (secondary screen):
-            pds1->setGeometry(desktop->screenGeometry(mySettings.general.displayScreen));
-        }
+        //auto id = mySettings.general.displayScreen;
+        // Move the display widget to screen 1 (secondary screen):
+        pds1->setGeometry(screens[mySettings.general.displayScreen]->geometry());
+        //qDebug() << "id = " << mySettings.general.displayScreen;
+        //qDebug() << "geometry = " << screens[mySettings.general.displayScreen]->geometry();
+        //qDebug() << "pds1 geometry = " << pds1->geometry();
 
         pds1->setCursor(Qt::BlankCursor); //Sets a Blank Mouse to the screen
         pds1->resetImGenSize();
@@ -240,7 +243,8 @@ void SoftProjector::positionDisplayWindow()
 
         if(mySettings.general.displayOnStartUp)
         {
-            pds1->showFullScreen();
+            //pds1->showFullScreen();
+            pds1->show();
 
             ui->actionCloseDisplay->setChecked(true);
             updateCloseDisplayButtons(true);
@@ -251,20 +255,17 @@ void SoftProjector::positionDisplayWindow()
         if(mySettings.general.displayScreen2>=0)
         {
             hasDisplayScreen2 = true;
-            if (desktop->isVirtualDesktop())
-            {
-                // Move the display widget to screen 1 (secondary screen):
-                pds2->setGeometry(desktop->screenGeometry(mySettings.general.displayScreen2));
-                pds2->resetImGenSize();
 
-            }
+            // Move the display widget to screen 1 (secondary screen):
+            pds2->setGeometry(screens[mySettings.general.displayScreen2]->geometry());
 
             pds2->setCursor(Qt::BlankCursor); //Sets a Blank Mouse to the screen
             pds2->renderPassiveText(theme.passive2.backgroundPix,theme.passive2.useBackground);
             pds2->setControlsVisible(false);
             if(mySettings.general.displayOnStartUp)
             {
-                pds2->showFullScreen();
+                //pds2->showFullScreen();
+                pds2->show();
             }
         }
         else
@@ -280,7 +281,7 @@ void SoftProjector::positionDisplayWindow()
     {
         // Single monitor only: Do not show on strat up.
         // Will be shown only when items were sent to the projector.
-        pds1->setGeometry(desktop->screenGeometry());
+        pds1->setGeometry(QGuiApplication::primaryScreen()->geometry());
         pds1->resetImGenSize();
         showDisplayScreen(false);
         isSingleScreen = true;
@@ -292,7 +293,8 @@ void SoftProjector::showDisplayScreen(bool show)
 {
     if(show)
     {
-        pds1->showFullScreen();
+        pds1->show();
+        //pds1->showFullScreen();
         pds1->positionControls(mySettings.general.displayControls);
         pds1->setControlsVisible(true);
     }
@@ -870,10 +872,12 @@ void SoftProjector::on_actionCloseDisplay_triggered()
 {
     if(ui->actionCloseDisplay->isChecked())
     {
-        pds1->showFullScreen();
+        //pds1->showFullScreen();
+        pds1->show();
         if(hasDisplayScreen2)
         {
-            pds2->showFullScreen();
+            //pds2->showFullScreen();
+            pds2->show();
         }
     }
     else
@@ -2415,7 +2419,7 @@ void SoftProjector::openScheduleItem(QSqlQuery &q, const int scid, Song &s)
     q.first();
     QSqlRecord r = q.record();
     s.songID = r.field("songid").value().toInt();
-    s.songbook_id = r.field("sbid").value().toInt();
+    s.songbook_id = r.field("sbid").value().toString();
     s.songbook_name = r.field("sbName").value().toString();
     s.number = r.field("number").value().toInt();
     s.title = r.field("title").value().toString();

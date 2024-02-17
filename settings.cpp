@@ -19,6 +19,9 @@
 
 #include "settings.hpp"
 
+#include <QGuiApplication>
+#include <QScreen>
+
 TextSettingsBase::TextSettingsBase()
 {
     id = "-1";
@@ -95,6 +98,22 @@ SongSettings::SongSettings()
     endingType = 0;
     endingPosition = 0;
     setChangeHandes();
+}
+
+//get all screens and their sublings
+QList<QScreen *> getScreensWithSublings()
+{
+    QList<QScreen *> res;
+
+    auto screens = QGuiApplication::screens();
+    res << screens;
+    // for (auto scr: screens)
+    // {
+    //     auto sublings = scr->virtualSiblings();
+    //     res << sublings;
+    // }
+
+    return res;
 }
 
 void saveIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value)
@@ -972,7 +991,7 @@ void Settings::saveNewSettings()
 QByteArray Settings::textToByt(QString text)
 {
     QByteArray b;
-    b.insert(0,text);
+    b.insert(0,text.toLocal8Bit());
     b = b.fromHex(b);
     return b;
 }

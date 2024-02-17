@@ -61,13 +61,15 @@ void GeneralSettingWidget::loadSettings()
 
     // Get display screen infomration
     monitors.clear();
-    QDesktopWidget d;
-    int screen_count = d.screenCount();
-    ui->comboBoxDisplayScreen->clear();
-    for(int i(0); i<screen_count;++i)
-        monitors << QString("%1 - %2x%3").arg(i+1).arg(d.screenGeometry(i).width()).arg(d.screenGeometry(i).height());
 
-    if(screen_count>1)
+    auto screens = getScreensWithSublings();
+    ui->comboBoxDisplayScreen->clear();
+
+    for(int i(0); i<screens.size();++i)
+            monitors << QString("%1 - %2x%3").arg(i+1).arg(screens[i]->geometry().width())
+                            .arg(screens[i]->geometry().height());
+
+    if(screens.size() > 1)
         ui->groupBoxDisplayScreen->setEnabled(true);
     else
         ui->groupBoxDisplayScreen->setEnabled(false);
@@ -80,20 +82,20 @@ void GeneralSettingWidget::loadSettings()
     ui->comboBoxDisplayScreen_2->addItems(monitors);
 
     // Set primary display screen
-    if(mySettings.displayScreen<0 || mySettings.displayScreen>=screen_count)
+    if(mySettings.displayScreen<0 || mySettings.displayScreen>=screens.size())
         ui->comboBoxDisplayScreen->setCurrentIndex(0);
     else
         ui->comboBoxDisplayScreen->setCurrentIndex(mySettings.displayScreen);
 
     // Set secondaty display screen
-    if(mySettings.displayScreen2<-1 || mySettings.displayScreen2>=screen_count)
+    if(mySettings.displayScreen2<-1 || mySettings.displayScreen>=screens.size())
         ui->comboBoxDisplayScreen_2->setCurrentIndex(0);
     else
         ui->comboBoxDisplayScreen_2->setCurrentIndex(mySettings.displayScreen2+1);
     updateSecondaryDisplayScreen();
 
     // Set Display Controls
-    if(screen_count>1)
+    if(screens.size() > 1)
         ui->groupBoxDisplayControls->setEnabled(false);
     else
         ui->groupBoxDisplayControls->setEnabled(true);
@@ -170,7 +172,7 @@ void GeneralSettingWidget::updateSecondaryDisplayScreen()
     }
 }
 
-void GeneralSettingWidget::on_comboBoxDisplayScreen_activated(const QString &arg1)
+void GeneralSettingWidget::on_comboBoxDisplayScreen_activated(int index)
 {
     updateSecondaryDisplayScreen();
 }

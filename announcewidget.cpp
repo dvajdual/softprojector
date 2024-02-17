@@ -29,8 +29,10 @@ AnnounceWidget::AnnounceWidget(QWidget *parent) :
     ui->setupUi(this);
 
     editAnounceDialog = new EditAnnouncementDialog(this);
-    connect(editAnounceDialog,SIGNAL(announceToAdd(Announcement)),this,SLOT(addNewAnnouncement(Announcement)));
-    connect(editAnounceDialog,SIGNAL(announceToUpdate()),this,SLOT(updateAnnouncement()));
+    connect(editAnounceDialog, &EditAnnouncementDialog::announceToAdd,
+            this, &AnnounceWidget::addNewAnnouncement);
+    connect(editAnounceDialog, &EditAnnouncementDialog::announceToUpdate,
+            this, &AnnounceWidget::updateAnnouncement);
 
     announceModel = new AnnounceModel;
     announceProxy = new AnnounceProxyModel(this);
@@ -40,8 +42,8 @@ AnnounceWidget::AnnounceWidget(QWidget *parent) :
     setAnnounceList();
     loadAnnouncements();
 
-    connect(ui->tableViewAnnouncements->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)),
-            this, SLOT(announceViewRowChanged(QModelIndex,QModelIndex)));
+    connect(ui->tableViewAnnouncements->selectionModel(), &QItemSelectionModel::currentRowChanged,
+            this, &AnnounceWidget::announceViewRowChanged);
 
     // Derease row height
     ui->tableViewAnnouncements->resizeRowsToContents();

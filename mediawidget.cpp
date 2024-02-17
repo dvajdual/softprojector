@@ -18,6 +18,7 @@
 ***************************************************************************/
 
 #include <QMediaMetaData>
+#include <QAudioOutput>
 
 #include "mediawidget.hpp"
 #include "ui_mediawidget.h"
@@ -35,30 +36,51 @@ MediaWidget::MediaWidget(QWidget *parent) :
     player = new QMediaPlayer(this);
 
     mediaControls = new MediaControl(this);
-     ui->horizontalLayoutControls->addWidget(mediaControls);
+    ui->horizontalLayoutControls->addWidget(mediaControls);
 
-    connect(player, SIGNAL(metaDataChanged()), this, SLOT(updateInfo()));
-    connect(player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),
-            this, SLOT(statusChanged(QMediaPlayer::MediaStatus)));
+    connect(player, &QMediaPlayer::metaDataChanged,
+            this, &MediaWidget::updateInfo);
+    connect(player, &QMediaPlayer::mediaStatusChanged,
+            this, &MediaWidget::statusChanged);
 //    connect(player, SIGNAL(bufferStatusChanged(int)), this, SLOT(bufferingProgress(int)));
-    connect(player, SIGNAL(videoAvailableChanged(bool)), this, SLOT(hasVideoChanged(bool)));
+    connect(player, &QMediaPlayer::hasVideoChanged,
+            this, &MediaWidget::hasVideoChanged);
 //    connect(player, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(displayErrorMessage()));
 
 
-    connect(mediaControls, SIGNAL(muted(bool)),player,SLOT(setMuted(bool)));
-    connect(mediaControls, SIGNAL(play()),player,SLOT(play()));
-    connect(mediaControls, SIGNAL(pause()),player,SLOT(pause()));
-    connect(mediaControls, SIGNAL(stop()),player,SLOT(stop()));
-    connect(mediaControls, SIGNAL(timeChanged(qint64)),player,SLOT(setPosition(qint64)));
-    connect(mediaControls, SIGNAL(volumeChanged(int)),player,SLOT(setVolume(int)));
+    connect(mediaControls, &MediaControl::play,
+            player, &QMediaPlayer::play);
+    connect(mediaControls, &MediaControl::pause,
+            player, &QMediaPlayer::pause);
+    connect(mediaControls, &MediaControl::stop,
+            player, &QMediaPlayer::stop);
+    connect(mediaControls, &MediaControl::timeChanged,
+            player, &QMediaPlayer::setPosition);
+    connect(player, &QMediaPlayer::hasAudioChanged,
+            this, [this](bool available)
+            {
+                if (available)
+                {
+                    connect(mediaControls, &MediaControl::muted,
+                            player->audioOutput(), &QAudioOutput::setMuted);
+                    connect(mediaControls, &MediaControl::volumeChanged,
+                            player->audioOutput(), &QAudioOutput::setVolume);
+                    connect(player->audioOutput(), &QAudioOutput::volumeChanged,
+                            mediaControls, &MediaControl::setVolume);
+                }
+            });
 
 
-    connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), mediaControls, SLOT(updatePlayerState(QMediaPlayer::State)));
-    connect(player, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(displayErrorMessage()));
-    connect(player, SIGNAL(durationChanged(qint64)), mediaControls, SLOT(setMaximumTime(qint64)));
-    connect(player, SIGNAL(positionChanged(qint64)), mediaControls, SLOT(updateTime(qint64)));
-    connect(player, SIGNAL(volumeChanged(int)),mediaControls,SLOT(setVolume(int)));
-  videoWidget = new VideoPlayerWidget(this);
+    connect(player, &QMediaPlayer::playbackStateChanged,
+            mediaControls, &MediaControl::updatePlayerState);
+    connect(player, &QMediaPlayer::errorOccurred,
+            this, &MediaWidget::displayErrorMessage);
+    connect(player, &QMediaPlayer::durationChanged,
+            mediaControls, &MediaControl::setMaximumTime);
+    connect(player, &QMediaPlayer::positionChanged,
+            mediaControls, &MediaControl::updateTime);
+
+    videoWidget = new VideoPlayerWidget(this);
     player->setVideoOutput(videoWidget);
 
     mediaControls->setVolume(100);
@@ -186,8 +208,8 @@ void MediaWidget::handleDrop(QDropEvent *e)
     fext.remove("*");
     fext.replace(" ","$|");
     fext.append("$");
-    QRegExp rx(fext);
-    rx.setCaseSensitivity(Qt::CaseInsensitive);
+    QRegularExpression rx(fext);
+    rx.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
     foreach(const QUrl &url, urls)
     {
         QString fp = url.toLocalFile();
@@ -238,8 +260,7 @@ void MediaWidget::playFile(QUrl filePath)
     isReadyToPlay = false;
     player->stop();
     currentMediaUrl = filePath;
-    QMediaContent m(filePath);
-    player->setMedia(m);
+    player->setSource(filePath);
 }
 
 void MediaWidget::updateInfo()
@@ -247,11 +268,11 @@ void MediaWidget::updateInfo()
     int maxLength = 50;
     QString font = "<font color=#49fff9>";
 
-    QString fName = player->currentMedia().canonicalUrl().fileName();
-    QString tAlbum = player->metaData(QMediaMetaData::AlbumTitle).toString();
-    QString tTitle = player->metaData(QMediaMetaData::Title).toString();
-    QString tArtist = player->metaData(QMediaMetaData::AlbumArtist).toString();
-    int tBitrate = player->metaData(QMediaMetaData::AudioBitRate).toInt();
+    QString fName = player->source ().fileName();
+    QString tAlbum = player->metaData().value(QMediaMetaData::AlbumTitle).toString();
+    QString tTitle = player->metaData().value(QMediaMetaData::Title).toString();
+    QString tArtist = player->metaData().value(QMediaMetaData::AlbumArtist).toString();
+    int tBitrate = player->metaData().value(QMediaMetaData::AudioBitRate).toInt();
 
     if (fName.length() > maxLength)
         fName = fName.left(maxLength) + "...";

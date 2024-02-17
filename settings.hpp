@@ -24,6 +24,9 @@
 #include <QPixmap>
 #include "spfunctions.hpp"
 
+
+//get all screens and their sublings
+QList<QScreen *> getScreensWithSublings();
 void saveIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value);
 void updateIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value);
 

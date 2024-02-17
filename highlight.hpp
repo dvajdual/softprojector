@@ -24,6 +24,7 @@
 #include <QSyntaxHighlighter>
 #include <QHash>
 #include <QTextCharFormat>
+#include <QRegExp>
 
 class Highlight : public QSyntaxHighlighter
 {

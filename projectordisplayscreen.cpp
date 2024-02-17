@@ -26,6 +26,7 @@ ProjectorDisplayScreen::ProjectorDisplayScreen(QWidget *parent) :
     ui(new Ui::ProjectorDisplayScreen)
 {
     ui->setupUi(this);
+    setWindowFlags(Qt::FramelessWindowHint);
     dispView = new QQuickView;
     imProvider = new SpImageProvider;
     dispView->engine()->addImageProvider(QLatin1String("improvider"),imProvider);
@@ -48,6 +49,7 @@ ProjectorDisplayScreen::ProjectorDisplayScreen(QWidget *parent) :
     backImSwitch1 = backImSwitch2 = textImSwitch1 = textImSwitch2 = false;
     back1to2 = text1to2 = isNewBack = true;
     m_color.setRgb(0,0,0,0);// = QColor(QColor::black());
+    //m_color = Qt::red;
 }
 
 ProjectorDisplayScreen::~ProjectorDisplayScreen()
@@ -177,7 +179,7 @@ void ProjectorDisplayScreen::setBackVideo(QString path)
 
     setVideoSource(item,path);
     item->setProperty("volume",0.0);
-    item->setProperty("loops",QMediaPlaylist::Loop);
+    item->setProperty("loops",QMediaPlayer::Infinite);
     item2->setProperty("fillMode",Qt::IgnoreAspectRatio);
 }
 
@@ -260,7 +262,11 @@ void ProjectorDisplayScreen::videoDurationChanged(int duration)
 
 void ProjectorDisplayScreen::videoPlaybackStateChanged(int state)
 {
-    emit videoPlaybackStateChanged((QMediaPlayer::State)state);
+    if (state == QMediaPlayer::StoppedState)
+    {
+        emit videoStopped();
+    }
+    emit videoPlaybackStateChanged((QMediaPlayer::PlaybackState)state);
 }
 
 void ProjectorDisplayScreen::keyReleaseEvent(QKeyEvent *event)
@@ -446,7 +452,7 @@ void ProjectorDisplayScreen::renderVideo(VideoInfo videoDetails)
     setVideoSource(item,videoDetails.filePath);
 
     item->setProperty("volume",1.0);
-    item->setProperty("loops",QMediaPlaylist::CurrentItemOnce);
+    item->setProperty("loops",1);
     item2->setProperty("fillMode",Qt::KeepAspectRatio);
 
     updateScreen();

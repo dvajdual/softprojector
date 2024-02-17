@@ -17,6 +17,13 @@
 ##
 ##**************************************************************************
 
+greaterThan(QT_MAJOR_VERSION, 5) {
+    message("Use Qt6 configuration")
+    QT += core5compat
+}
+else {
+    message("Use Qt5 configuration")
+}
 
 QT += core \
     gui \
@@ -27,11 +34,12 @@ QT += core \
     quick \
     printsupport \
     multimedia \
-    multimediawidgets
+    multimediawidgets \
+
 
 TARGET = SoftProjector
 TEMPLATE = app
-CONFIG += x86 ppc x86_64 ppc64 # Compile a universal build
+#CONFIG += x86 ppc x86_64 ppc64 # Compile a universal build
 
 RES_DIR = $${PWD}/unknownsys_build
 win32: RES_DIR = $${PWD}/win32_build

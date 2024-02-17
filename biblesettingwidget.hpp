@@ -58,10 +58,10 @@ private slots:
     void updateTrinaryBibleMenu2();
     void updateOperatorBibleMenu();
 
-    void on_comboBoxPrimaryBible_activated(const QString &arg1);
-    void on_comboBoxPrimaryBible2_activated(const QString &arg1);
-    void on_comboBoxSecondaryBible_activated(const QString &arg1);
-    void on_comboBoxSecondaryBible2_activated(const QString &arg1);
+    void on_comboBoxPrimaryBible_activated(int index);
+    void on_comboBoxPrimaryBible2_activated(int index);
+    void on_comboBoxSecondaryBible_activated(int index);
+    void on_comboBoxSecondaryBible2_activated(int index);
     void on_buttonBrowseBackground_clicked();
     void on_buttonBrowseBackground2_clicked();
     void on_checkBoxUseShadow_stateChanged(int arg1);
